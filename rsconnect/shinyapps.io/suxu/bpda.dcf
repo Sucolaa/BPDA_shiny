@@ -1,0 +1,14 @@
+name: bpda
+title: bpda
+username:
+account: suxu
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 7851590
+bundleId: 6638064
+url: https://suxu.shinyapps.io/bpda/
+when: 1671059796.7783
+lastSyncTime: 1671059796.77831
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: test/app.R

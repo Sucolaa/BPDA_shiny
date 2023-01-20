@@ -1,0 +1,726 @@
+---
+title: "tidy population"
+author: "Su Xu"
+date: "2022-11-11"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#environment building
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(usmap)
+library(DT)
+library(gganimate)
+library(ggthemes)
+library(ggrepel)
+library(forcats)
+library(scales)
+library(readxl)
+library(tidyverse)
+library(janitor)
+library(data.table)
+```
+
+```{r}
+#function 
+read_excel_allsheets <- function(filename, tibble = FALSE) {
+    sheets <- readxl::excel_sheets(filename)
+    x <- lapply(sheets, function(X) readxl::read_excel(filename, sheet = X, col_names = FALSE))
+    if(!tibble) x <- lapply(x, as.data.frame)
+    names(x) <- sheets
+    x
+}
+```
+
+```{r}
+#FIPS state comparison sheet
+state <- readxl::read_excel("../data/Brazilian Population.xlsx", sheet = 1)
+data_year <- seq(2005, 2019,1)
+data_sep <- seq(1,12,1)
+# population data
+population_sheet <- read_excel_allsheets("../data/Brazilian Population.xlsx")
+  #select sheets in each year
+population_sheet[names(population_sheet) %in% data_year] -> population_sheet
+```
+
+```{r}
+pop05 <- as.data.frame(t(population_sheet[[1]])[c(-1,-2),])
+colnames(pop05) <- t(population_sheet[[1]])[2,]
+clean_names(pop05) -> pop05
+pop05 %>% mutate(year = 2005) -> pop05
+
+pop06 <- as.data.frame(t(population_sheet[[2]])[c(-1,-2),])
+colnames(pop06) <- t(population_sheet[[2]])[2,]
+clean_names(pop06) -> pop06
+pop06 %>% mutate(year = 2006) -> pop06
+
+pop07 <- as.data.frame(t(population_sheet[[3]])[c(-1,-2),])
+colnames(pop07) <- t(population_sheet[[3]])[2,]
+clean_names(pop07) -> pop07
+pop07 %>% mutate(year = 2007) -> pop07
+
+pop08 <- as.data.frame(t(population_sheet[[4]])[c(-1,-2),])
+colnames(pop08) <- t(population_sheet[[4]])[2,]
+clean_names(pop08) -> pop08
+pop08 %>% mutate(year = 2008) -> pop08
+
+pop09 <- as.data.frame(t(population_sheet[[5]])[c(-1,-2),])
+colnames(pop09) <- t(population_sheet[[5]])[2,]
+clean_names(pop09)-> pop09
+pop09 %>% mutate(year = 2009) -> pop09
+
+pop10 <- as.data.frame(t(population_sheet[[6]])[c(-1,-2),])
+colnames(pop10) <- t(population_sheet[[6]])[2,]
+clean_names(pop10)-> pop10
+pop10 %>% mutate(year = 2010) -> pop10
+
+pop11 <- as.data.frame(t(population_sheet[[7]])[c(-1,-2),])
+colnames(pop11) <- t(population_sheet[[7]])[2,]
+clean_names(pop11)-> pop11
+pop11 %>% mutate(year = 2011) -> pop11
+
+#pop11 <- read_excel("./Brazilian Population.xlsx", sheet = 8)
+#as.data.frame(t(pop11)[c(-1,-2),])
+
+pop12 <- as.data.frame(t(population_sheet[[8]])[c(-1,-2),])
+colnames(pop12) <- t(population_sheet[[8]])[2,]
+clean_names(pop12)-> pop12
+pop12 %>% mutate(year = 2012) -> pop12
+
+pop13 <- as.data.frame(t(population_sheet[[9]])[c(-1,-2),])
+colnames(pop13) <- t(population_sheet[[9]])[2,]
+clean_names(pop13)-> pop13
+pop13 %>% mutate(year = 2013) -> pop13
+
+pop14 <- as.data.frame(t(population_sheet[[10]])[c(-1,-2),])
+colnames(pop14) <- t(population_sheet[[10]])[2,]
+clean_names(pop14)-> pop14
+pop14 %>% mutate(year = 2014) -> pop14
+
+pop15 <- as.data.frame(t(population_sheet[[11]])[c(-1,-2),])
+colnames(pop15) <- t(population_sheet[[11]])[2,]
+clean_names(pop15)-> pop15
+pop15 %>% mutate(year = 2015) -> pop15
+
+pop16 <- as.data.frame(t(population_sheet[[12]])[c(-1,-2),])
+colnames(pop16) <- t(population_sheet[[12]])[2,]
+clean_names(pop16)-> pop16
+pop16 %>% mutate(year = 2016) -> pop16
+
+pop17 <- as.data.frame(t(population_sheet[[13]])[c(-1,-2),])
+colnames(pop17) <- t(population_sheet[[13]])[2,]
+clean_names(pop17)-> pop17
+pop17 %>% mutate(year = 2017) -> pop17
+
+pop18 <- as.data.frame(t(population_sheet[[14]])[c(-1,-2),])
+colnames(pop18) <- t(population_sheet[[14]])[2,]
+clean_names(pop18)-> pop18
+pop18 %>% mutate(year = 2018) -> pop18
+
+pop19 <- as.data.frame(t(population_sheet[[15]])[c(-1,-2),])
+colnames(pop19) <- t(population_sheet[[15]])[2,]
+clean_names(pop19)-> pop19
+pop19 %>% mutate(year = 2019) -> pop19
+```
+
+```{r}
+pop_list <- list(pop05,pop06,pop07,pop08,pop09,pop10,pop11,pop12,pop13,pop14,pop15,pop16,pop17,pop18,pop19)
+pop_list %>% 
+  reduce(full_join) -> Braz_pop
+Braz_pop[is.na(Braz_pop)] = 0
+```
+
+```{r}
+as.data.frame(lapply(Braz_pop,as.numeric)) -> Braz_pop
+Braz_pop %>% 
+  select(year, everything()) ->Braz_pop
+
+Braz_pop %>% 
+  filter(year == 2011)
+```
+
+```{r}
+write.csv(Braz_pop, "./Braz_pop_tidied.csv")
+```
+
+```{r}
+population_sheet[[1]][,1] %>% unique() %>% as.data.frame() -> overall_cate
+as.data.frame(overall_cate[-1,]) -> overall_cate
+colnames(overall_cate) <- c("cate")
+write.csv(overall_cate,"./overall_cate.csv")
+```
+
+```{r}
+colnames(Braz_pop)
+```
+
+```{r}
+#build sub-data frames for each big variable that contains multiple small variables
+braz_pop <- Braz_pop[2:4]
+write.csv(braz_pop, "./sub_data/braz_pop.csv")
+braz_pop %>% 
+  group_by(year) %>% 
+  mutate(population = sum(population)) %>% 
+  distinct(year, .keep_all = TRUE) %>% 
+  select(-X, -state_code) -> braz_pop_sum
+braz_pop_per <- c(1,
+                     braz_pop_sum$population[2]/braz_pop_sum$population[1],
+                     braz_pop_sum$population[3]/braz_pop_sum$population[2],
+                     braz_pop_sum$population[4]/braz_pop_sum$population[3],
+                     braz_pop_sum$population[5]/braz_pop_sum$population[4],
+                     braz_pop_sum$population[6]/braz_pop_sum$population[5],
+                     braz_pop_sum$population[7]/braz_pop_sum$population[6],
+                     braz_pop_sum$population[8]/braz_pop_sum$population[7],
+                     braz_pop_sum$population[9]/braz_pop_sum$population[8],
+                     braz_pop_sum$population[10]/braz_pop_sum$population[9],
+                     braz_pop_sum$population[11]/braz_pop_sum$population[10],
+                     braz_pop_sum$population[12]/braz_pop_sum$population[11],
+                     braz_pop_sum$population[13]/braz_pop_sum$population[12],
+                     braz_pop_sum$population[14]/braz_pop_sum$population[13],
+                     braz_pop_sum$population[15]/braz_pop_sum$population[14])
+braz_pop_per <- round((braz_pop_per-1)*100,2)
+cbind(braz_pop_sum, braz_pop_per) -> pop_sum1
+colnames(pop_sum1) <- c("year","population","population_per")
+write.csv(pop_sum1, "./sub_data/pop_sum.csv")
+```
+
+
+```{r}
+braz_age <- Braz_pop[c(2:3,5:21)]
+write.csv(braz_age, "./sub_data/braz_age.csv")
+braz_age %>% 
+  group_by(year) %>% 
+  mutate(age_0_to_4 = sum(age_0_to_4),
+         age_05_to_09 = sum(age_05_to_09),
+         age_10_to_19 = sum(age_10_to_19),
+         age_20_to_24 = sum(age_20_to_24),
+         age_25_to_29 = sum(age_25_to_29),
+         age_30_to_34 = sum(age_30_to_34),
+         age_35_to_39 = sum(age_35_to_39),
+         age_40_to_44 = sum(age_40_to_44),
+         age_45_to_49 = sum(age_45_to_49),
+         age_50_to_54 = sum(age_50_to_54),
+         age_55_to_59 = sum(age_55_to_59),
+         age_60_to_64 = sum(age_60_to_64),
+         age_65_to_69 = sum(age_65_to_69),
+         age_70_to_74 = sum(age_70_to_74),
+         age_75_to_79 = sum(age_75_to_79),
+         age_80_to_84 = sum(age_80_to_84),
+         age_85_plus = sum(age_85_plus)) %>% 
+  distinct(year, .keep_all = TRUE) %>% 
+  select(-X,-state_code) -> age_sum
+write.csv(age_sum, "./sub_data/age_sum.csv")
+```
+
+```{r}
+braz_gender <- Braz_pop[c(2:3,22:23)]
+write.csv(braz_gender,"./sub_data/braz_gender.csv")
+braz_gender %>% 
+  group_by(year) %>% 
+  mutate(female = sum(female),
+         male = sum(male)) %>% 
+  distinct(year, .keep_all = TRUE) %>% 
+  select(-X,-state_code) -> gender_sum
+write.csv(gender_sum, "./sub_data/gender_sum.csv")
+```
+
+```{r}
+braz_marital <- Braz_pop[c(2:3,25:28)]
+write.csv(braz_marital,"./sub_data/braz_marital.csv")
+braz_marital %>% 
+  group_by(year) %>% 
+  mutate(widowed = sum(widowed),
+         divorced = sum(divorced),
+         separated = sum(separated),
+         never_married_or_under_15_years_old = sum(never_married_or_under_15_years_old)) %>% 
+  distinct(year, .keep_all = TRUE) %>% 
+  select(-X,-state_code) -> marital_sum
+write.csv(marital_sum, "./sub_data/marital_sum.csv")
+```
+
+```{r}
+braz11 <- read_excel("./Brazilian Population.xlsx", sheet = 8)
+as.data.frame(t(braz11)[c(-1,-2),])[,26:27] -> braz11
+colnames(braz11) <- c("u_s_citizen_by_naturalization",
+                                "not_a_citizen_of_the_u_s")
+braz11 %>% 
+  mutate(year = 2011) %>% 
+  mutate(u_s_citizen_by_naturalization = as.numeric(u_s_citizen_by_naturalization),
+         not_a_citizen_of_the_u_s = as.numeric(not_a_citizen_of_the_u_s)) %>% 
+  mutate(us_citizen_by_naturalization = sum(u_s_citizen_by_naturalization),
+         not_a_citizen_of_the_us = sum(not_a_citizen_of_the_u_s)) %>% 
+  distinct(year, .keep_all = T) %>% 
+  select(year, us_citizen_by_naturalization, not_a_citizen_of_the_us) -> citizen11
+
+braz_citizenship <- Braz_pop[c(2:3,29:30)]
+write.csv(braz_citizenship,"./sub_data/braz_citizenship.csv")
+braz_citizenship %>% 
+  group_by(year) %>% 
+  mutate(us_citizen_by_naturalization = sum(u_s_citizen_by_naturalization),
+         not_a_citizen_of_the_us = sum(not_a_citizen_of_the_u_s)) %>% 
+  distinct(year, .keep_all = TRUE) %>% 
+  select(-state_code, -u_s_citizen_by_naturalization, -not_a_citizen_of_the_u_s) -> citizenship_sum
+
+full_join(citizenship_sum, citizen11)
+write.csv(citizenship_sum, "./sub_data/citizenship.csv")
+
+braz_citizenship %>% 
+  filter(year == c(2011,2012))
+```
+
+```{r}
+braz_entry <- Braz_pop[c(2:3,31:32)]
+write.csv(braz_entry,"./sub_data/braz_entry.csv")
+braz_entry %>% 
+  group_by(year) %>% 
+  mutate(entered_us_before_2000 = sum(entered_us_before_2000),
+         entered_us_in_2000_or_later = sum(entered_us_in_2000_or_later)) %>% 
+  distinct(year, .keep_all = TRUE) %>% 
+  select(-state_code) -> entry_sum
+write.csv(entry_sum, "./sub_data/entry_sum.csv")
+```
+
+```{r}
+braz_english <- Braz_pop[c(2:3,33)]
+braz_english %>% 
+  mutate(speaks_english_very_well = Braz_pop$population - speaks_english_less_than_very_well) -> braz_english
+write.csv(braz_english, "./sub_data/braz_english.csv")
+braz_english %>% 
+  group_by(year) %>% 
+  mutate(speaks_english_less_than_very_well = sum(speaks_english_less_than_very_well),
+         speaks_english_very_well = sum(speaks_english_very_well)) %>% 
+  distinct(year, .keep_all = TRUE) %>% 
+  select(-X,-state_code) -> english_sum
+write.csv(english_sum, "./sub_data/english_sum.csv")
+```
+
+```{r}
+braz_education <- Braz_pop[c(2:3,34:37)]
+write.csv(braz_education,"./sub_data/braz_education.csv")
+braz_education %>% 
+  group_by(year) %>% 
+  mutate(less_than_high_school = sum(less_than_high_school),
+         high_school_graduate_ged_or_alternative_credential = sum(high_school_graduate_ged_or_alternative_credential),
+         some_college_associate_degree = sum(some_college_associate_degree),
+         bachelors_degree_or_higher = sum(bachelors_degree_or_higher)) %>% 
+  distinct(year, .keep_all = TRUE) %>% 
+  select(-X,-state_code) -> education_sum
+write.csv(education_sum, "./sub_data/education_sum.csv")
+```
+
+```{r}
+braz_labor_by_gender <- Braz_pop[c(2:3,38:39)]
+write.csv(braz_labor_by_gender, "./sub_data/braz_labor_by_gender.csv")
+braz_labor_by_gender %>% 
+  group_by(year) %>% 
+  mutate(males_in_civilian_labor_force = sum(males_in_civilian_labor_force),
+         females_in_civilian_labor_force = sum(females_in_civilian_labor_force)) %>% 
+  distinct(year, .keep_all = TRUE) %>% 
+  select(-X,-state_code) -> labor_by_gender_sum
+write.csv(labor_by_gender_sum, "./sub_data/labor_by_gender_sum.csv")
+```
+
+```{r}
+braz_unemployment <- Braz_pop[c(2:3,40:41)]
+write.csv(braz_unemployment,"./sub_data/braz_unemployment.csv")
+braz_unemployment %>% 
+  group_by(year) %>% 
+  mutate(unemployed_males = sum(unemployed_males),
+         unemployed_females = sum(unemployed_females)) %>% 
+  distinct(year, .keep_all = TRUE) %>% 
+  select(-X,-state_code) -> unemployment_sum
+write.csv(unemployment_sum, "./sub_data/unemployment_sum.csv")
+```
+
+```{r}
+braz_employment_type <- Braz_pop[c(2:3,42:45)]
+write.csv(braz_employment_type,"./sub_data/braz_employment_type.csv")
+braz_employment_type %>% 
+  group_by(year) %>% 
+  mutate(private_wage_and_salary_workers = sum(private_wage_and_salary_workers),
+         government_workers = sum(government_workers),
+         self_employed_not_incorporated = sum(self_employed_not_incorporated),
+         self_employed_incorporated = sum(self_employed_incorporated)) %>% 
+  distinct(year, .keep_all = TRUE) %>% 
+  select(-X,-state_code) -> employment_type_sum
+write.csv(employment_type_sum, "./sub_data/employment_type_sum.csv")
+```
+
+```{r}
+braz_employment_by_industry <- Braz_pop[c(2:3,46:59)]
+write.csv(braz_employment_by_industry, "./sub_data/braz_employment_by_industry.csv")
+braz_employment_by_industry %>% 
+  group_by(year) %>% 
+  mutate(accommodation_and_food_services_and_arts_entertainment_and_recreation = sum(accommodation_and_food_services_and_arts_entertainment_and_recreation),
+         construction = sum(construction),
+         education = sum(education),
+         finance_insurance_and_real_estate = sum(finance_insurance_and_real_estate),
+         health_care_social_assistance = sum(health_care_social_assistance),
+         information = sum(information),
+         manufacturing = sum(manufacturing),
+         other_services = sum(other_services),
+         professional_scientific_management_and_administrative_services = sum(professional_scientific_management_and_administrative_services),
+         public_administration = sum(public_administration),
+         retail = sum(retail),
+         transportation_warehousing_utilities_natural_resources = sum(transportation_warehousing_utilities_natural_resources),
+         wholesale_trade = sum(wholesale_trade),
+         other = sum(other)) %>% 
+  distinct(year, .keep_all = TRUE) %>% 
+  select(-X,-state_code) -> employment_by_industry_sum
+write.csv(employment_by_industry_sum, "./sub_data/employment_by_industry_sum.csv")
+```
+
+```{r}
+braz_employment_by_occupation <- Braz_pop[c(2:3, 60:69)]
+write.csv(braz_employment_by_occupation,"./sub_data/braz_employment_by_occupation.csv")
+braz_employment_by_occupation %>% 
+  group_by(year) %>% 
+  mutate(management_professional = sum(management_professional),
+         services = sum(services),
+        sales_and_office= sum(sales_and_office),
+        construction_and_extracion = sum(construction_and_extracion),
+        maintenance_and_repair = sum(maintenance_and_repair),
+        production_transportation_and_material_moving = sum(production_transportation_and_material_moving),
+        educational_instruction_and_library_occupations = sum(educational_instruction_and_library_occupations),
+        arts_design_entertainment_sports_and_media_occupations = sum(arts_design_entertainment_sports_and_media_occupations),
+        healthcare_practitioner_and_technical_occupations = sum(healthcare_practitioner_and_technical_occupations),
+        other = sum(other_2)) %>% 
+  distinct(year, .keep_all = TRUE) %>% 
+  select(-X,-state_code,-other) -> employment_by_occupation_sum
+write.csv(employment_by_occupation_sum, "./sub_data/employment_by_occupation_sum.csv")
+```
+
+```{r}
+braz_poverty <- Braz_pop[c(2:3,70:72)]
+write.csv(braz_poverty,"./sub_data/braz_poverty.csv")
+braz_poverty %>% 
+  group_by(year) %>% 
+  mutate(individuals_below_poverty = sum(individuals_below_poverty),
+         individuals_above_poverty = sum(individuals_above_poverty)) %>% 
+  distinct(year, .keep_all = TRUE) %>% 
+  select(-X,-state_code) -> poverty_sum
+write.csv(poverty_sum, "./sub_data/poverty_sum.csv")
+```
+
+```{r}
+braz_earning <- Braz_pop[c(2:3,73:74)]
+write.csv(braz_earning, "./sub_data/braz_earning.csv")
+braz_earning %>% 
+  group_by(year) %>% 
+  mutate(median_personal_earnings = sum(median_personal_earnings),
+         median_personal_earnings_excl_0_and_neg = sum(median_personal_earnings_excl_0_and_neg)) %>% 
+  distinct(year, .keep_all = TRUE) %>% 
+  select(-X,-state_code) -> earning_sum
+write.csv(earning_sum, "./sub_data/earning_sum.csv")
+```
+
+```{r}
+myselect <- pivot_wider(overall_cate,names_from = cate,values_from = cate)
+overall_cate %>% select(-X) ->overall_cate
+write.csv(overall_cate,"./overall_cate.csv")
+```
+
+```{r}
+mylist <- c("braz_pop","braz_age","braz_gender","braz_marital","braz_citizenship","braz_entry","braz_english","braz_education","braz_labor_by_gender","braz_unemployment","braz_employment_type","braz_employment_by_industry","braz_employment_by_occupation","braz_poverty","braz_earning")
+pivot_wider(overall_cate,names_from = cate,values_from = X)
+```
+
+```{r}
+braz_pop %>% 
+  group_by(year) %>% 
+  mutate(population = sum(population)) %>% 
+  distinct(year, .keep_all = TRUE) %>% 
+  select(year,population)
+
+unique(mypop$pop)
+```
+
+```{r}
+braz_pop %>% 
+  group_by(year) %>% 
+  mutate(population = sum(population)) %>% 
+  distinct(year, .keep_all = TRUE) %>% 
+  select(year,population) ->braz_pop_sum
+  mutate(pop_per = as.list(1,
+                     population[2]/population[1],
+                     population[3]/population[2],
+                     population[4]/population[3],
+                     population[5]/population[4],
+                     population[6]/population[5],
+                     population[7]/population[6],
+                     population[8]/population[7],
+                     population[9]/population[8],
+                     population[10]/population[9],
+                     population[11]/population[10],
+                     population[12]/population[11],
+                     population[13]/population[12],
+                     population[14]/population[13],
+                     population[15]/population[14]))
+  
+braz_pop_per <- c(1,
+                     braz_pop_sum$population[2]/braz_pop_sum$population[1],
+                     braz_pop_sum$population[3]/braz_pop_sum$population[2],
+                     braz_pop_sum$population[4]/braz_pop_sum$population[3],
+                     braz_pop_sum$population[5]/braz_pop_sum$population[4],
+                     braz_pop_sum$population[6]/braz_pop_sum$population[5],
+                     braz_pop_sum$population[7]/braz_pop_sum$population[6],
+                     braz_pop_sum$population[8]/braz_pop_sum$population[7],
+                     braz_pop_sum$population[9]/braz_pop_sum$population[8],
+                     braz_pop_sum$population[10]/braz_pop_sum$population[9],
+                     braz_pop_sum$population[11]/braz_pop_sum$population[10],
+                     braz_pop_sum$population[12]/braz_pop_sum$population[11],
+                     braz_pop_sum$population[13]/braz_pop_sum$population[12],
+                     braz_pop_sum$population[14]/braz_pop_sum$population[13],
+                     braz_pop_sum$population[15]/braz_pop_sum$population[14])
+braz_pop_per <- round((braz_pop_per-1)*100,2)
+cbind(braz_pop_sum, braz_pop_per) -> pop_sum2
+colnames(pop_sum2) <- c("year","population","percente")
+```
+
+
+```{r}
+pop_sum <- read.csv("./sub_data/pop_sum.csv")
+age_sum <- read.csv("./sub_data/age_sum.csv")
+
+age_sum %>% 
+  group_by(year) %>% 
+  mutate(young = sum(age_0_to_4,age_05_to_09,
+                     age_10_to_19,age_20_to_24,
+                     age_25_to_29),
+         `middle-aged` = sum(age_30_to_34,age_35_to_39,
+                             age_40_to_44,age_45_to_49,
+                             age_50_to_54,age_55_to_59,
+                             age_60_to_64,age_65_to_69),
+         old = sum(age_70_to_74,age_75_to_79,
+                   age_80_to_84,age_85_plus)) %>% 
+  select(year, young, `middle-aged`, old) -> age_sum
+write_csv(age_sum, "./sub_data/age_sum.csv")
+
+age_sum %>% 
+  pivot_longer(cols = c(young,middle.aged, old),
+               names_to = "age",
+               values_to = "account")
+```
+
+
+
+
+
+
+
+```{r}
+data_year <- seq(2005, 2019,1)
+data_sep <- seq(1,12,1)
+# population data
+household_sheet <- read_excel_allsheets("./Brazilian Households.xlsx")
+  #select sheets in each year
+household_sheet[names(household_sheet) %in% data_year] -> household_sheet
+```
+
+```{r}
+house05 <- as.data.frame(t(household_sheet[[1]]))[c(-1,-2,-3),]
+colnames(house05) <- as.data.frame(t(household_sheet[[1]]))[3,]
+
+house05
+```
+
+```{r}
+house05 <- as.data.frame(t(household_sheet[[1]]))[c(-1,-2,-3),]
+colnames(house05) <- as.data.frame(t(household_sheet[[1]]))[3,]
+clean_names(house05) -> house05
+house05 %>% 
+  mutate(year = 2005) %>% 
+  select(year, everything()) -> house05
+
+house06 <- as.data.frame(t(household_sheet[[2]]))[c(-1,-2,-3),]
+colnames(house06) <- as.data.frame(t(household_sheet[[2]]))[3,]
+clean_names(house06) -> house06
+house06 %>% 
+  mutate(year = 2006) %>% 
+  select(year, everything()) -> house06
+
+house07 <- as.data.frame(t(household_sheet[[3]]))[c(-1,-2,-3),]
+colnames(house07) <- as.data.frame(t(household_sheet[[1]]))[3,]
+clean_names(house07) -> house07
+house07 %>% 
+  mutate(year = 2007) %>% 
+  select(year, everything()) -> house07
+
+house08 <- as.data.frame(t(household_sheet[[4]]))[c(-1,-2,-3),]
+colnames(house08) <- as.data.frame(t(household_sheet[[1]]))[3,]
+clean_names(house08) -> house08
+house08 %>% 
+  mutate(year = 2008) %>% 
+  select(year, everything()) -> house08
+
+house09 <- as.data.frame(t(household_sheet[[5]]))[c(-1,-2,-3),]
+colnames(house09) <- as.data.frame(t(household_sheet[[1]]))[3,]
+clean_names(house09) -> house09
+house09 %>% 
+  mutate(year = 2009) %>% 
+  select(year, everything()) -> house09
+
+house10 <- as.data.frame(t(household_sheet[[6]]))[c(-1,-2,-3),]
+colnames(house10) <- as.data.frame(t(household_sheet[[1]]))[3,]
+clean_names(house10) -> house10
+house10 %>% 
+  mutate(year = 2010) %>% 
+  select(year, everything()) -> house10
+
+house11 <- as.data.frame(t(household_sheet[[7]]))[c(-1,-2,-3),]
+colnames(house11) <- as.data.frame(t(household_sheet[[1]]))[3,]
+clean_names(house11) -> house11
+house11 %>% 
+  mutate(year = 2011) %>% 
+  select(year, everything()) -> house11
+
+house12 <- as.data.frame(t(household_sheet[[8]]))[c(-1,-2,-3),]
+colnames(house12) <- as.data.frame(t(household_sheet[[1]]))[3,]
+clean_names(house12) -> house12
+house12 %>% 
+  mutate(year = 2012) %>% 
+  select(year, everything()) -> house12
+
+house13 <- as.data.frame(t(household_sheet[[9]]))[c(-1,-2,-3),]
+colnames(house13) <- as.data.frame(t(household_sheet[[1]]))[3,]
+clean_names(house13) -> house13
+house13 %>% 
+  mutate(year = 2013) %>% 
+  select(year, everything()) -> house13
+
+house14 <- as.data.frame(t(household_sheet[[10]]))[c(-1,-2,-3),]
+colnames(house14) <- as.data.frame(t(household_sheet[[1]]))[3,]
+clean_names(house14) -> house14
+house14 %>% 
+  mutate(year = 2014) %>% 
+  select(year, everything()) -> house14
+
+house15 <- as.data.frame(t(household_sheet[[11]]))[c(-1,-2,-3),]
+colnames(house15) <- as.data.frame(t(household_sheet[[1]]))[3,]
+clean_names(house15) -> house15
+house15 %>% 
+  mutate(year = 2015) %>% 
+  select(year, everything()) -> house15
+
+house16 <- as.data.frame(t(household_sheet[[12]]))[c(-1,-2,-3),]
+colnames(house16) <- as.data.frame(t(household_sheet[[1]]))[3,]
+clean_names(house16) -> house16
+house16 %>% 
+  mutate(year = 2016) %>% 
+  select(year, everything()) -> house16
+
+house17 <- as.data.frame(t(household_sheet[[13]]))[c(-1,-2,-3),]
+colnames(house17) <- as.data.frame(t(household_sheet[[1]]))[3,]
+clean_names(house17) -> house17
+house17 %>% 
+  mutate(year = 2017) %>% 
+  select(year, everything()) -> house17
+
+house18 <- as.data.frame(t(household_sheet[[14]]))[c(-1,-2,-3),]
+colnames(house18) <- as.data.frame(t(household_sheet[[1]]))[3,]
+clean_names(house18) -> house18
+house18 %>% 
+  mutate(year = 2018) %>% 
+  select(year, everything()) -> house18
+
+house19 <- as.data.frame(t(household_sheet[[15]]))[c(-1,-2,-3),]
+colnames(house19) <- as.data.frame(t(household_sheet[[1]]))[3,]
+clean_names(house19) -> house19
+house19 %>% 
+  mutate(year = 2019) %>% 
+  select(year, everything()) -> house19
+```
+
+
+```{r}
+house_list <- list(house05,house06,house07,house08,house09,house10,house11,house12,house13,house14,house15,house16,house17,house18,house19)
+house_list %>% 
+  reduce(full_join) -> household
+household[is.na(household)] = 0
+```
+
+```{r}
+as.data.frame(lapply(household,as.numeric)) -> household
+```
+
+```{r}
+household %>% 
+  group_by(year) %>% 
+  transmute(total_householders = sum(total_householders),
+         ownership_owner_occupied_unit = sum(owner_occupied_unit),
+         ownershio_renter_occupied_unit = sum(renter_occupied_unit),
+         total_family_households = sum(total_family_households),
+         poverty_families_below_poverty = sum(families_below_poverty),
+         poverty_family_above_poverty = sum(family_above_poverty),
+         month_cost_under_20_percent_of_hh_income = sum(under_20_percent_of_hh_income),
+         month_cost_x20_to_25_percent_of_hh_income = sum(x20_to_25_percent_of_hh_income),
+         month_cost_x25_to_30_percent_of_hh_income = sum(x25_to_30_percent_of_hh_income),
+         month_cost_x30_to_35_percent_of_hh_income = sum(x30_to_35_percent_of_hh_income),
+         month_cost_x35_percent_of_hh_income = sum(x35_percent_of_hh_income),
+         month_rent_under_15_percent_of_hh_income = sum(under_15_percent_of_hh_income),
+         month_rent_x15_percent_to_20_percent_of_hh_income = 
+           sum(x15_percent_to_20_percent_of_hh_income),
+         month_rent_x20_percent_to_25_percent_of_hh_income = sum(x20_percent_to_25_percent_of_hh_income),
+         month_rent_x25_percent_to_30_percent_of_hh_income = sum(x25_percent_to_30_percent_of_hh_income),
+         month_rent_x30_percent_to_35_percent_of_hh_income = sum(x30_percent_to_35_percent_of_hh_income),
+         month_rent_x35_percent_of_hh_income_2 = sum(x35_percent_of_hh_income_2),
+         overcrowding_crowded_units = sum(crowded_units),
+         overcrowding_not_crowded_units = sum(not_crowded_units),
+         median_household_income = sum(median_household_income),
+         median_family_income = sum(median_family_income)) -> household
+
+household %>% 
+  count(year) -> year_count
+
+left_join(household, year_count) -> household
+
+household %>% 
+  group_by(year) %>% 
+  mutate(median_household_income = median_household_income/n,
+         median_family_income = median_family_income/n) %>% 
+  distinct(year, .keep_all = TRUE) %>% 
+  select(-n) -> household
+
+round(household,3) -> household
+
+write.csv(household, "./household.csv")
+```
+
+"Total Householders" = "total_householders",
+                                                             "Ownership" = c("ownership_owner_occupied_unit",
+                                                                             "ownershio_renter_occupied_unit"),
+                                                             "Family Household" = "total_family_households",
+                                                             "Family Poverty" = c("poverty_families_below_poverty",
+                                                                                  "poverty_family_above_poverty"),
+                                                             "Monthly Owner Costs" = c("")
+
+
+```{r}
+household %>% 
+  pivot_longer(cols = colnames(household)[-c(1,2)],
+               names_to = "myvar",
+               values_to = "account") -> household
+write.csv(household, "./household.csv")
+
+colnames(household)[-c(1,2)]
+```
+
+```{r}
+household %>% 
+  filter(myvar == "total_householders") -> mytest
+
+cbind(mytest)
+```
+
+```{r}
+unique(household$myvar)
+```
+```{r}
+household %>% 
+  filter(year == 2005)
+```
+

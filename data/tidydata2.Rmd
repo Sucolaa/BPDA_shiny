@@ -1,0 +1,81 @@
+---
+title: "tidydata2"
+author: "Su Xu"
+date: "2022-11-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(janitor)
+library(devtools)
+library(readxl)
+```
+
+```{r}
+pop_sum <- read.csv("../data/sub_data/pop_sum.csv")
+age_sum <- read.csv("../data/sub_data/age_sum.csv")
+gender_sum <- read.csv("../data/sub_data/gender_sum.csv")
+marital_sum <- read.csv("../data/sub_data/marital_sum.csv")
+citizenship_sum <- read.csv("../data/sub_data/citizenship_sum.csv")
+entry_sum <- read.csv("../data/sub_data/entry_sum.csv")
+english_sum <- read.csv("../data/sub_data/english_sum.csv")
+labor_by_gender_sum <- read.csv("../data/sub_data/labor_by_gender_sum.csv")
+unemployment_sum <- read.csv("../data/sub_data/unemployment_sum.csv")
+employment_type_sum <- read.csv("../data/sub_data/employment_type_sum.csv")
+employment_by_industry_sum <- read.csv("../data/sub_data/employment_by_industry_sum.csv")
+enployment_by_occupation_sum <- read.csv("../data/sub_data/employment_by_occupation_sum.csv")
+poverty_sum <- read.csv("../data/sub_data/poverty_sum.csv")
+earning_sum <- read.csv("../data/sub_data/earning_sum.csv")
+education_sum <- read.csv("../data/sub_data/education_sum.csv")
+```
+
+```{r}
+cbind(pop_sum, age_sum,gender_sum,marital_sum,citizenship_sum,entry_sum,english_sum,labor_by_gender_sum,unemployment_sum,employment_type_sum,employment_by_industry_sum,enployment_by_occupation_sum,poverty_sum,earning_sum,education_sum) -> population_sum
+clean_names(population_sum) -> population_sum
+write.csv(population_sum, "./population_sum.csv")
+```
+
+```{r}
+pop_sum %>% 
+  select(-c(X,x,year_2,x_2,year_3,x_3,year_4,x_4,year_5,x_5,year_6,x_6,year_7,x_7,year_8,x_8,year_9,x_9,year_10,x_10,year_11,x_11,year_12,x_12,year_13,x_13,year_14,x_14,year_15)) -> pop_sum
+pop_sum %>% 
+  pivot_longer(cols = colnames(pop_sum)[-1],
+               names_to = "myvar",
+               values_to = "account") -> pop_sum
+write.csv(pop_sum, "../data/population_sum.csv")
+colnames(pop_sum)
+```
+
+```{r}
+braz05 <- read_excel("./Brazilian Population.xlsx", sheet = 2)
+
+as.data.frame(t(braz05))
+```
+
+```{r}
+braz <- read.csv("./population_sum.csv")
+head(braz)
+```
+
+```{r}
+braz %>% 
+  filter(myvar == c("young","middle_aged")) %>% 
+  ggplot(aes(x = year,
+             y = account,
+             fill = myvar)) +
+  geom_col(position = position_dodge())
+```
+
+```{r}
+test_var <- c("widowed","divorced","separated","never married or under 15 years old")
+braz %>% 
+  filter(myvar %in% test_var) %>% 
+  ggplot(aes(x = year,
+             y = account,
+             fill = myvar,
+             color = myvar)) +
+  geom_col(position = position_dodge())
+```
+
